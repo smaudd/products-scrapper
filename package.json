@@ -1,0 +1,40 @@
+{
+  "name": "web-scrapper",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "webpack --watch",
+    "build": "webpack --mode=production",
+    "start": "node ./dist/server.js"
+  },
+  "engines": {
+    "node": "12.14.1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.3",
+    "chromium": "^2.1.1",
+    "cors": "^2.8.5",
+    "crypto-js": "^3.1.9-1",
+    "csvtojson": "^2.0.10",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "mongodb-client-encryption": "^1.0.1",
+    "mongoose": "^5.8.7",
+    "puppeteer": "^2.0.0",
+    "webpack-node-externals": "^1.7.2"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.8.3",
+    "@babel/core": "^7.8.3",
+    "babel-loader": "^8.0.6",
+    "node-notifier": "^6.0.0",
+    "nodemon": "^2.0.2",
+    "nodemon-webpack-plugin": "^4.2.2",
+    "webpack": "^4.41.5",
+    "webpack-cli": "^3.3.10"
+  }
+}
