@@ -1,24 +1,20 @@
 import puppeteer from 'puppeteer'
 import Product from 'models/Product.model'
-import cheerio from 'cheerio'
 import fs from 'fs'
 import path from 'path'
-import csv from 'csvtojson'
 import chromeOptions from '../../browserConfig'
 import csvtojson from 'csvtojson'
 const url = 'https://www.mercabarna.es/serveis/es_estadistiques-diaries'
-const baseUrl = 'https://www.fotocasa.es'
 
 const getCSV = async () => {
-
+    console.log('Attempting to download CSV')
     try {
         const browser = await puppeteer.launch({ ...chromeOptions, executablePath: process.env.CHROME_EXECUTABLE_PATH })
         const page = await browser.newPage()
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3419.0 Safari/537.36');
-
         await page._client.send('Page.setDownloadBehavior', {
             behavior: 'allow',
-            // This path must match the WORKSPACE_DIR in Step 1
+
             downloadPath: path.resolve(__dirname, '../'),
         });
         await page.goto(url)
@@ -26,6 +22,7 @@ const getCSV = async () => {
         element.click()
         await page.waitForNavigation({ waitUntil: 'networkidle0' })
         await page.goto(url + '?export')
+        await browser.close()
     } catch (err) {
         // console.log(err)
     }
@@ -52,8 +49,9 @@ const checkDate = (json) => {
     return maxPeriod < fileDate
 }
 
-const mercabarna = async (productType) => {
+const mercabarna = async () => {
     await getCSV()
+    console.log('Ready to parse')
     const file = fs.readFileSync(path.resolve(__dirname, '../export.csv'), { encoding: 'latin1' })
     const json = await csvtojson({
         delimiter: ';',
@@ -61,8 +59,11 @@ const mercabarna = async (productType) => {
         noheader: true,
         headers: ['name', 'dominant', 'max', 'min']
     }).fromString(file)
+
     if (checkDate(json)) {
+        console.log('Valid date, ready to write DB')
         const filteredHeader = json.slice(3, json.length)
+        console.log(json.slice(0, 3)[1].name)
         const results = filteredHeader.map(({ name, dominant, min, max }) => {
             return {
                 name,
@@ -82,6 +83,7 @@ const mercabarna = async (productType) => {
                 console.log(err)
             }
         })
+        console.log('Did DB write')
     }
 }
 
