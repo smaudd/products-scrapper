@@ -45,6 +45,8 @@ const checkDate = (json) => {
     let fileDate = json.find(row => row.name.includes('Fecha')).name.split(' ')[1]
     const date = new Date()
     const maxPeriod = new Date().setDate(date.getDate() - 2)
+    console.log('File date', new Date(ISO(fileDate)))
+    console.log('Current date', date)
     fileDate = new Date(ISO(fileDate)).getTime()
     return maxPeriod < fileDate
 }
@@ -61,7 +63,7 @@ const mercabarna = async () => {
     }).fromString(file)
 
     if (checkDate(json)) {
-        console.log('Valid date, ready to write DB')
+        console.log('Ready to write DB')
         const filteredHeader = json.slice(3, json.length)
         console.log(json.slice(0, 3)[1].name)
         const results = filteredHeader.map(({ name, dominant, min, max }) => {
@@ -84,7 +86,9 @@ const mercabarna = async () => {
             }
         })
         console.log('Did DB write')
+        return
     }
+    console.log('Invalid date')
 }
 
 export default mercabarna
