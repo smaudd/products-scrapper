@@ -17,10 +17,8 @@
   "dependencies": {
     "chromium": "^2.1.1",
     "cors": "^2.8.5",
-    "crypto-js": "^3.1.9-1",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
-    "mongodb-client-encryption": "^1.0.1",
     "puppeteer": "^2.0.0",
     "webpack-node-externals": "^1.7.2"
   },
