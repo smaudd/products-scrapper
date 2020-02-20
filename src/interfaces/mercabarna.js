@@ -6,7 +6,7 @@ import chromeOptions from '../../browserConfig'
 import csvtojson from 'csvtojson'
 const url = 'https://www.mercabarna.es/serveis/es_estadistiques-diaries'
 
-const getCSV = async () => {
+const getData = async () => {
     console.log('Attempting to download CSV')
     try {
         const browser = await puppeteer.launch({ ...chromeOptions, executablePath: process.env.CHROME_EXECUTABLE_PATH })
@@ -21,10 +21,26 @@ const getCSV = async () => {
         const element = await page.$('[name="generar"]');
         element.click()
         await page.waitForNavigation({ waitUntil: 'networkidle0' })
-        await page.goto(url + '?export')
+        const data = await page.evaluate(() => {
+            const tbody = Array.from(document.querySelector('tbody').children)
+            const caption = document.querySelector('caption').innerHTML
+            const date = caption.slice(caption.match(/[0-9]/).index, caption.length)
+            const products = tbody.map(child => ({
+                    name: child.children[0].innerHTML,
+                    dominant: parseFloat(child.children[1].innerHTML.replace(/,/g, '.')),
+                    max: parseFloat(child.children[2].innerHTML.replace(/,/g, '.')),
+                    min: parseFloat(child.children[3].innerHTML.replace(/,/g, '.')),
+                })
+            )
+            return {
+                date,
+                products,
+            }
+        })
         await browser.close()
+        return data
     } catch (err) {
-        // console.log(err)
+        console.log(err)
     }
 }
 
@@ -41,47 +57,20 @@ const ISO = (fileDate) => {
     return `${fragments[2]}-${fragments[1]}-${fragments[0]}`
 }
 
-const checkDate = (json) => {
-    const fileDate = json.find(row => row.name.includes('Fecha')).name.split(' ')[1]
+const checkDate = (dataDate) => {
     const date = new Date()
     const maxPeriod = new Date().setDate(date.getDate() - 3)
-    console.log('File date', new Date(ISO(fileDate)))
-    console.log('Current date', date)
-    const fileDateOnTime = new Date(ISO(fileDate)).getTime()
-    return { 
-        fileDate: new Date(ISO(fileDate)).toISOString().split('T')[0],
-        isValid: maxPeriod < fileDateOnTime 
-    }
+    const dataDateOnTime = new Date(ISO(dataDate)).getTime()
+    return maxPeriod < dataDateOnTime 
 }
 
 const mercabarna = async () => {
-    await getCSV()
-    console.log('Ready to parse')
-    const file = fs.readFileSync(path.resolve(__dirname, '../export.csv'), { encoding: 'latin1' })
-    const json = await csvtojson({
-        delimiter: ';',
-        trim: true,
-        noheader: true,
-        headers: ['name', 'dominant', 'max', 'min']
-    }).fromString(file)
-    const { fileDate, isValid } = checkDate(json)
-    if (isValid) {
-        console.log('Ready to write DB')
-        const filteredHeader = json.slice(3, json.length)
-        const results = filteredHeader.map(({ name, dominant, min, max }) => {
-            return {
-                name,
-                dominant: stringToFloat(dominant),
-                min: stringToFloat(min),
-                max: stringToFloat(max),
-            }
-        })
-        results.unshift({
-            date: fileDate,
-        })
-        fs.writeFileSync(path.resolve(__dirname, `../assets/output/${fileDate}.json`), JSON.stringify(results, null, 2))
+    const data = await getData()
+    const isValidDate = checkDate(data.date)
+    if (isValidDate) {
+        fs.writeFileSync(path.resolve(__dirname, `../assets/output/${data.date}.json`), JSON.stringify(data, null, 2))
         console.log('Saved as file')
-        results.forEach(async ({ name, min, max, dominant }) => {
+        data.products.forEach(async ({ name, min, max, dominant }) => {
             try {
                 const result = await Product.findOneAndUpdate(
                     { name },
