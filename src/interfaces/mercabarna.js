@@ -1,13 +1,12 @@
 import puppeteer from 'puppeteer'
 import fs from 'fs'
 import path from 'path'
-import chromeOptions from '../../browserConfig'
 const url = 'https://www.mercabarna.es/serveis/es_estadistiques-diaries'
 
 const getData = async () => {
     console.log('Attempting to scrape')
     try {
-        const browser = await puppeteer.launch({ ...chromeOptions, executablePath: process.env.CHROME_EXECUTABLE_PATH })
+        const browser = await puppeteer.launch({ executablePath: 'chromium-browser' })
         const page = await browser.newPage()
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3419.0 Safari/537.36');
         await page._client.send('Page.setDownloadBehavior', {
