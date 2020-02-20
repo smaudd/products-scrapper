@@ -65,7 +65,6 @@ const mercabarna = async () => {
     if (checkDate(json)) {
         console.log('Ready to write DB')
         const filteredHeader = json.slice(3, json.length)
-        console.log(json.slice(0, 3)[1].name)
         const results = filteredHeader.map(({ name, dominant, min, max }) => {
             return {
                 name,
@@ -74,6 +73,8 @@ const mercabarna = async () => {
                 max: stringToFloat(max),
             }
         })
+        fs.writeFileSync(path.resolve(__dirname, `../assets/output/${new Date().toISOString().split('T')[0]}.json`), JSON.stringify(results, null, 2))
+        console.log('Saved as file')
         results.forEach(async ({ name, min, max, dominant }) => {
             try {
                 const result = await Product.findOneAndUpdate(
