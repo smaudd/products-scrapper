@@ -1,13 +1,11 @@
 import puppeteer from 'puppeteer'
-import Product from 'models/Product.model'
 import fs from 'fs'
 import path from 'path'
 import chromeOptions from '../../browserConfig'
-import csvtojson from 'csvtojson'
 const url = 'https://www.mercabarna.es/serveis/es_estadistiques-diaries'
 
 const getData = async () => {
-    console.log('Attempting to download CSV')
+    console.log('Attempting to scrape')
     try {
         const browser = await puppeteer.launch({ ...chromeOptions, executablePath: process.env.CHROME_EXECUTABLE_PATH })
         const page = await browser.newPage()
@@ -21,6 +19,7 @@ const getData = async () => {
         const element = await page.$('[name="generar"]');
         element.click()
         await page.waitForNavigation({ waitUntil: 'networkidle0' })
+        await page.waitFor('tbody')
         const data = await page.evaluate(() => {
             const tbody = Array.from(document.querySelector('tbody').children)
             const caption = document.querySelector('caption').innerHTML
@@ -44,14 +43,6 @@ const getData = async () => {
     }
 }
 
-const stringToFloat = (input) => {
-    if (!input) {
-        return null
-    }
-    const slices = input.split(',')
-    return parseFloat(slices[0]) + parseFloat(`0.${slices[1]}`)
-}
-
 const ISO = (fileDate) => {
     const fragments = fileDate.split('-')
     return `${fragments[2]}-${fragments[1]}-${fragments[0]}`
@@ -69,19 +60,7 @@ const mercabarna = async () => {
     const isValidDate = checkDate(data.date)
     if (isValidDate) {
         fs.writeFileSync(path.resolve(__dirname, `../assets/output/${data.date}.json`), JSON.stringify(data, null, 2))
-        console.log('Saved as file')
-        data.products.forEach(async ({ name, min, max, dominant }) => {
-            try {
-                const result = await Product.findOneAndUpdate(
-                    { name },
-                    { '$push': { min: { value: min }, max: { value: max }, dominant: { value: dominant } } },
-                    { upsert: true, new: true }
-                )
-            } catch (err) {
-                console.log(err)
-            }
-        })
-        console.log('Did DB write')
+        console.log('File has been written')
         return
     }
     console.log('Invalid date')
