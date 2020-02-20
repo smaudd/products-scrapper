@@ -76,6 +76,9 @@ const mercabarna = async () => {
                 max: stringToFloat(max),
             }
         })
+        results.unshift({
+            date: fileDate,
+        })
         fs.writeFileSync(path.resolve(__dirname, `../assets/output/${fileDate}.json`), JSON.stringify(results, null, 2))
         console.log('Saved as file')
         results.forEach(async ({ name, min, max, dominant }) => {
