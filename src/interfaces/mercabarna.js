@@ -42,13 +42,16 @@ const ISO = (fileDate) => {
 }
 
 const checkDate = (json) => {
-    let fileDate = json.find(row => row.name.includes('Fecha')).name.split(' ')[1]
+    const fileDate = json.find(row => row.name.includes('Fecha')).name.split(' ')[1]
     const date = new Date()
-    const maxPeriod = new Date().setDate(date.getDate() - 2)
+    const maxPeriod = new Date().setDate(date.getDate() - 3)
     console.log('File date', new Date(ISO(fileDate)))
     console.log('Current date', date)
-    fileDate = new Date(ISO(fileDate)).getTime()
-    return maxPeriod < fileDate
+    const fileDateOnTime = new Date(ISO(fileDate)).getTime()
+    return { 
+        fileDate: new Date(ISO(fileDate)).toISOString().split('T')[0],
+        isValid: maxPeriod < fileDateOnTime 
+    }
 }
 
 const mercabarna = async () => {
@@ -61,8 +64,8 @@ const mercabarna = async () => {
         noheader: true,
         headers: ['name', 'dominant', 'max', 'min']
     }).fromString(file)
-
-    if (checkDate(json)) {
+    const { fileDate, isValid } = checkDate(json)
+    if (isValid) {
         console.log('Ready to write DB')
         const filteredHeader = json.slice(3, json.length)
         const results = filteredHeader.map(({ name, dominant, min, max }) => {
@@ -73,7 +76,7 @@ const mercabarna = async () => {
                 max: stringToFloat(max),
             }
         })
-        fs.writeFileSync(path.resolve(__dirname, `../assets/output/${new Date().toISOString().split('T')[0]}.json`), JSON.stringify(results, null, 2))
+        fs.writeFileSync(path.resolve(__dirname, `../assets/output/${fileDate}.json`), JSON.stringify(results, null, 2))
         console.log('Saved as file')
         results.forEach(async ({ name, min, max, dominant }) => {
             try {
